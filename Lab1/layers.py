@@ -2,6 +2,7 @@
 # 使用单独的文件以减少MLP.py文件中的代码行数，增强可读性
 
 import numpy as np
+# import math
 
 
 class NNLayer:
@@ -9,6 +10,9 @@ class NNLayer:
         return
 
     def forward(self, x):
+        return
+
+    def backward(self, loss):
         return
 
 
@@ -48,7 +52,7 @@ class FullyConnectLayer(NNLayer):
         """
         反向传播函数
         :param loss: 上层传递的Loss值, shape=(out_channel, 1)
-        :return:
+        :return: 继续传递的Loss值
         """
         x_mean = np.mean(self.x, axis=1)    # shape=(in_channels,)
         assert x_mean.shape == (self.in_channels, )
@@ -68,11 +72,39 @@ class FullyConnectLayer(NNLayer):
 class ReLU(NNLayer):
     def __init__(self):
         super(ReLU, self).__init__()
+        # self.weights = np.zeros((channels, 1))  # 用列向量来表示，实际运行的时候1应该是batch size
+        # self.channels = channels
+        self.weights = None
 
+    def forward(self, x):
+        # self.weights = np.zeros((self.channels, x.shape[1]))
+        self.weights = np.where(x > 0, 1, 0)
+        assert self.weights.shape == x.shape
+
+        return x * self.weights
+
+    def backward(self, loss: np.ndarray):
+        w_mean = np.mean(self.weights, axis=1).reshape((self.channels, 1))
+
+        return loss * w_mean
+
+
+class Sigmoid(NNLayer):
+    def __init__(self):
+        super(Sigmoid, self).__init__()
+
+    def forward(self, x):
+        return 1 / (1 + np.exp(-x))
+
+    def backward(self, loss):
+        sigmoid = 1 / (1 + np.exp(-loss))
+        return sigmoid * (1 - sigmoid)
 
 
 if __name__ == '__main__':
     fc = FullyConnectLayer(4, 6)
+    relu = ReLU()
+    sigmoid = Sigmoid()
     x = [[3, 1, 2, 3], [2, 2, 3, 4], [3, 3, 2, 1]]
     x = np.array(x)
     x = x.T
@@ -82,6 +114,11 @@ if __name__ == '__main__':
 
     y = fc.forward(x)
     print(y.shape)
+    y[0, 1] = -4
+    print(y)
+    y_relu = relu.forward(y)
+    y_sigmoid = sigmoid.forward(y)
+    print(y_relu, y_sigmoid)
     loss = [[2], [4], [0], [0], [1], [5]]
     loss = np.array(loss)
     new_loss = fc.backward(loss)
