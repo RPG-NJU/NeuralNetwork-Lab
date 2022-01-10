@@ -123,3 +123,5 @@ if __name__ == '__main__':
     loss = np.array(loss)
     new_loss = fc.backward(loss)
     print(new_loss.shape)
+    print(type(relu))
+    print(type(relu) == ReLU)
