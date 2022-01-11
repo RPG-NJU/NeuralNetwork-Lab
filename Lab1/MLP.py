@@ -113,8 +113,8 @@ class MLP(NNLayer):
         total_acc = 0.0
 
         for i in range(0, batch_num):
-            x = self.train_images[i*self.batch_size:(i+1)*self.batch_size].T
-            y_gt = self.train_labels[i*self.batch_size:(i+1)*self.batch_size]
+            x = self.train_images[i*self.batch_size: (i+1)*self.batch_size].T
+            y_gt = self.train_labels[i*self.batch_size: (i+1)*self.batch_size]
 
             y = self.forward(x)
             loss = self.loss_function.forward(y, y_gt)
@@ -127,6 +127,22 @@ class MLP(NNLayer):
         total_acc = total_acc / self.train_labels.shape[0]
 
         return total_loss, total_acc
+
+    def test(self):
+        batch_num = int(self.train_images.shape[0] / self.batch_size)
+
+        total_acc = 0.0
+
+        for i in range(0, batch_num):
+            x = self.test_images[i*self.batch_size: (i+1)*self.batch_size].T
+            y_gt = self.test_labels[i*self.batch_size: (i+1)*self.batch_size]
+
+            y = self.forward(x)
+            total_acc += utils.labels_equal_num(utils.y_to_labels(y), y_gt)
+
+        total_acc = total_acc / self.test_labels.shape[0]
+
+        return total_acc
 
 
 class BaselineMLP(MLP):
