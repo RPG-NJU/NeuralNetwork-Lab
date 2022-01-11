@@ -1,8 +1,10 @@
 # 负责整个MLP的网络结构
-from layers import NNLayer, FullyConnectLayer, ReLU, Sigmoid
+from layers import NNLayer, FullyConnectLayer, ReLU, Sigmoid, MSELoss, SoftmaxCELoss
 from enum import Enum
-import random
+from config import Config
 import numpy as np
+from opData import OpData
+import utils
 
 
 class InitMethod(Enum):
@@ -14,10 +16,20 @@ class InitMethod(Enum):
 
 
 class MLP(NNLayer):
-    def __init__(self):
+    def __init__(self, config=Config()):
         super(MLP, self).__init__()
 
         self.layer_list = []
+
+        self.learn_rate = config.INIT_LEARN_RATE
+        self.batch_size = config.BATCH_SIZE
+
+        self.loss_function = MSELoss()
+
+        self.train_images = OpData.read_idx3_file(config.TRAIN_IMAGES_PATH)
+        self.train_labels = OpData.read_idx1_file(config.TRAIN_LABELS_PATH).astype(int)
+        self.test_images = OpData.read_idx3_file(config.TEST_IMAGES_PATH)
+        self.test_labels = OpData.read_idx1_file(config.TEST_LABELS_PATH).astype(int)
 
         return
 
@@ -30,7 +42,8 @@ class MLP(NNLayer):
     def backward(self, loss):
         next_step_loss = loss
         for i in range(1, len(self.layer_list) + 1):
-            next_step_loss = self.layer_list[-i].backward(loss)
+            next_step_loss = self.layer_list[-i].backward(next_step_loss)
+            # print(next_step_loss.shape)
         return next_step_loss
 
     def init(self, method: InitMethod, args: list):
@@ -90,13 +103,38 @@ class MLP(NNLayer):
             print("Error: No Such Init Method!")
             exit(-1)
 
+    def train(self):
+        assert self.train_labels.shape[0] % self.batch_size == 0
+        assert self.test_labels.shape[0] % self.batch_size == 0
+        # batch size必须可以整除
+        batch_num = int(self.train_images.shape[0] / self.batch_size)
+
+        total_loss = 0.0
+        total_acc = 0.0
+
+        for i in range(0, batch_num):
+            x = self.train_images[i*self.batch_size:(i+1)*self.batch_size].T
+            y_gt = self.train_labels[i*self.batch_size:(i+1)*self.batch_size]
+
+            y = self.forward(x)
+            loss = self.loss_function.forward(y, y_gt)
+            total_loss += loss
+            total_acc += utils.labels_equal_num(utils.y_to_labels(y), y_gt)
+            back_loss = self.loss_function.backward(loss)
+            self.backward(back_loss)
+
+        total_loss = total_loss / batch_num
+        total_acc = total_acc / self.train_labels.shape[0]
+
+        return total_loss, total_acc
+
 
 class BaselineMLP(MLP):
-    def __init__(self):
-        super(BaselineMLP, self).__init__()
-        self.fc1 = FullyConnectLayer(784, 100)
-        self.fc2 = FullyConnectLayer(100, 50)
-        self.fc3 = FullyConnectLayer(50, 10)
+    def __init__(self, config=Config()):
+        super(BaselineMLP, self).__init__(config=config)
+        self.fc1 = FullyConnectLayer(784, 100, self.learn_rate)
+        self.fc2 = FullyConnectLayer(100, 50, self.learn_rate)
+        self.fc3 = FullyConnectLayer(50, 10, self.learn_rate)
         self.layer_list = [
             self.fc1,
             ReLU(),
@@ -104,6 +142,10 @@ class BaselineMLP(MLP):
             ReLU(),
             self.fc3,
         ]
+
+        self.loss_function = SoftmaxCELoss()
+
+        self.init(method=InitMethod.UNIFORM, args=[-0.1, 0.1])
 
 
 if __name__ == '__main__':

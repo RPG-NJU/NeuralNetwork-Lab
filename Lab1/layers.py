@@ -45,7 +45,7 @@ class FullyConnectLayer(NNLayer):
         :return: output Y, shape=(out_channel,batch_size)
         """
         self.x = x  # 记录当前输入的X
-
+        # print(self.weights.shape, self.x.shape, self.bias.shape)
         return self.weights @ self.x + self.bias
 
     def backward(self, loss: np.ndarray):
@@ -54,11 +54,13 @@ class FullyConnectLayer(NNLayer):
         :param loss: 上层传递的Loss值, shape=(out_channel, 1)
         :return: 继续传递的Loss值
         """
-        x_mean = np.mean(self.x, axis=1)    # shape=(in_channels,)
-        assert x_mean.shape == (self.in_channels, )
+        # x_mean = np.mean(self.x, axis=1)    # shape=(in_channels,)
+        # assert x_mean.shape == (self.in_channels, )
 
-        delta_w = - self.learn_rate * (loss @ x_mean.reshape(self.in_channels, 1).T)
-        delta_b = - self.learn_rate * loss
+        # print(loss.shape, self.x.shape[1])
+        delta_w = - self.learn_rate * (loss @ self.x.T) / self.x.shape[1]
+        # print(delta_w.shape)
+        delta_b = - np.mean(self.learn_rate * loss, axis=1).reshape(self.out_channels, 1)
         assert delta_w.shape == (self.out_channels, self.in_channels)
         assert delta_b.shape == (self.out_channels, 1)
 
@@ -66,6 +68,7 @@ class FullyConnectLayer(NNLayer):
         self.weights += delta_w
         self.bias += delta_b
 
+        # print(next_step_loss.shape)
         return next_step_loss
 
 
@@ -84,9 +87,9 @@ class ReLU(NNLayer):
         return x * self.weights
 
     def backward(self, loss: np.ndarray):
-        w_mean = np.mean(self.weights, axis=1).reshape((self.channels, 1))
-
-        return loss * w_mean
+        # print(loss.shape, self.weights.T.shape)
+        # w_mean = np.mean(self.weights, axis=1).reshape((loss.shape[0], 1))
+        return loss * self.weights
 
 
 class Sigmoid(NNLayer):
@@ -160,10 +163,10 @@ class MSELoss(NNLayer):
         """
         前向传播函数
         :param x: 网络的输出
-        :param y: Labels，shape=(batch_size, 1)
+        :param y: Labels，shape=(batch_size,)
         :return:
         """
-        assert y.shape[1] == 1
+        # assert y.shape[1] == 1
         y_one_hot = np.zeros(x.shape)
         for i in range(0, y.shape[0]):
             y_one_hot[y[i], i] = 1.0

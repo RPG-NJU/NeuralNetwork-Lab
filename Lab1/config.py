@@ -14,7 +14,10 @@ class Config:
         self.TRAIN_LABELS_PATH = os.path.join(self.PROJECT_PATH, "Data/train-labels-idx1-ubyte")
         self.TEST_IMAGES_PATH = os.path.join(self.PROJECT_PATH, "Data/t10k-images-idx3-ubyte")
         self.TEST_LABELS_PATH = os.path.join(self.PROJECT_PATH, "Data/t10k-labels-idx1-ubyte")
-        self.PATCH_SIZE = 20
+
+        self.INIT_LEARN_RATE = 0.001
+        self.BATCH_SIZE = 20
+        self.EPOCH = 100
 
 
 if __name__ == '__main__':
