@@ -91,6 +91,21 @@ class MLP(NNLayer):
             exit(-1)
 
 
+class BaselineMLP(MLP):
+    def __init__(self):
+        super(BaselineMLP, self).__init__()
+        self.fc1 = FullyConnectLayer(784, 100)
+        self.fc2 = FullyConnectLayer(100, 50)
+        self.fc3 = FullyConnectLayer(50, 10)
+        self.layer_list = [
+            self.fc1,
+            ReLU(),
+            self.fc2,
+            ReLU(),
+            self.fc3,
+        ]
+
+
 if __name__ == '__main__':
     print("MLP.py")
 

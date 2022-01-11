@@ -9,15 +9,16 @@ import sys
 class Config:
 
     def __init__(self):
-        self.project_path = os.getcwd()     # 获取当前运行目录
-        self.train_images_path = os.path.join(self.project_path, "Data/train-images-idx3-ubyte")
-        self.train_labels_path = os.path.join(self.project_path, "Data/train-labels-idx1-ubyte")
-        self.test_images_path = os.path.join(self.project_path, "Data/t10k-images-idx3-ubyte")
-        self.test_labels_path = os.path.join(self.project_path, "Data/t10k-labels-idx1-ubyte")
+        self.PROJECT_PATH = os.getcwd()     # 获取当前运行目录
+        self.TRAIN_IMAGES_PATH = os.path.join(self.PROJECT_PATH, "Data/train-images-idx3-ubyte")
+        self.TRAIN_LABELS_PATH = os.path.join(self.PROJECT_PATH, "Data/train-labels-idx1-ubyte")
+        self.TEST_IMAGES_PATH = os.path.join(self.PROJECT_PATH, "Data/t10k-images-idx3-ubyte")
+        self.TEST_LABELS_PATH = os.path.join(self.PROJECT_PATH, "Data/t10k-labels-idx1-ubyte")
+        self.PATCH_SIZE = 20
 
 
 if __name__ == '__main__':
     CONFIG = Config()
-    print(CONFIG.project_path)
-    print(CONFIG.train_images_path)
+    # print(CONFIG.project_path)
+    # print(CONFIG.train_images_path)
 

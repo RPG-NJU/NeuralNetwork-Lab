@@ -73,3 +73,4 @@ if __name__ == '__main__':
     # print(type(data))
     data3 = OpData.read_idx3_file(CONFIG.train_images_path)
     print(type(data3), data3.shape)
+    print(data.shape)
