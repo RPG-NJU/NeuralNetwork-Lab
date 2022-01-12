@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from config import Config
+from config import MLPConfig
 from opData import *
 from torch.utils.data import Dataset, DataLoader
 from myModule import MyModule
@@ -9,7 +9,7 @@ from utils import sMAPE
 
 
 class SeqMLP(MyModule):
-    def __init__(self, config=Config()):
+    def __init__(self, config=MLPConfig()):
         """
         初始化一个序列MLP，通过滑动窗口来进行MLP的训练，最终达到预测一个时间序列的目的
         :param config: Net Config
@@ -88,11 +88,26 @@ class SeqMLP(MyModule):
 
                 smape = sMAPE(val_output, val_target)
                 return smape
-        # pass
+
+    def test(self):
+        with torch.no_grad():
+            train_inorder_iter = iter(self.validation_inorder_loader)
+            test_inorder_iter = iter(self.test_inorder_loader)
+            input_data = train_inorder_iter.__next__()[:, -self.input_num:]
+            target_data = test_inorder_iter.__next__()
+
+            output_data = self.forward(input_data)
+
+            output_data, target_data = line_minmax_denorm(output_data, target_data, self.min, self.max)
+
+            return sMAPE(output_data, target_data)
+
+            # print(input_data.shape, target_data.shape)
 
 
 if __name__ == '__main__':
-    mlp = SeqMLP(config=Config())
-    for epoch in range(0, Config().EPOCH):
+    mlp = SeqMLP(config=MLPConfig())
+    for epoch in range(0, MLPConfig().EPOCH):
         mlp.train_a_epoch()
         print(mlp.validate())
+        print("Test sMAPE=%.3f " % mlp.test())

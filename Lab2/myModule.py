@@ -2,13 +2,13 @@
 # 作为父类进行继承，而不直接使用
 
 import torch.nn as nn
-from config import Config
+from config import MLPConfig
 from opData import *
 from torch.utils.data import Dataset, DataLoader
 
 
 class MyModule(nn.Module):
-    def __init__(self, config: Config()):
+    def __init__(self, config: MLPConfig()):
         super(MyModule, self).__init__()
 
         self.batch_size = config.BATCH_SIZE

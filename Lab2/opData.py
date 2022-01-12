@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from config import Config
+from config import MLPConfig
 import torch
 from torch.utils.data import Dataset, DataLoader
 
@@ -74,7 +74,7 @@ def get_windows_data(x: np.ndarray, window_size: int) -> np.ndarray:
 
 
 if __name__ == '__main__':
-    c = Config()
+    c = MLPConfig()
     train_data = OpData.read_csv(c.TRAIN_DATA_PATH)
     dataset = MyDataset(train_data)
     dataloader = DataLoader(dataset, batch_size=10, shuffle=True)
