@@ -17,6 +17,29 @@ class OpData:
         np_data = pd_data.values
         return np_data.astype(np.float32)
 
+    @classmethod
+    def line_norm(cls, x: np.ndarray, line_min=None, line_max=None):
+        if line_min is None:
+            line_min = np.min(x, axis=1).reshape(x.shape[0], 1)
+            line_max = np.max(x, axis=1).reshape(x.shape[0], 1)
+        x = (x - line_min) / (line_max - line_min)
+        return x, line_min, line_max
+
+    @classmethod
+    def get_norm_minmax(cls, x: np.ndarray):
+        """
+        根据这一段数据，生成min max的列表
+        :param x: 归一化的依据
+        :return:
+        """
+        line_min = np.min(x, axis=1).reshape(x.shape[0], 1)
+        line_max = np.max(x, axis=1).reshape(x.shape[0], 1)
+        return line_min, line_max
+
+    @classmethod
+    def line_denorm(cls, x: np.ndarray, line_min, line_max):
+        return x * (line_max - line_min) + line_min
+
 
 class MyDataset(Dataset):
     def __init__(self, data: np.ndarray):
@@ -71,6 +94,34 @@ def get_windows_data(x: np.ndarray, window_size: int) -> np.ndarray:
     for i in range(0, x.shape[1]-window_size):
         result = np.concatenate((result, x[:, i: i+window_size]), axis=0)
     return result.astype(np.float32)
+
+
+class SeqWindowDataset(Dataset):
+    def __init__(self, seq_data: np.ndarray, input_size: int, target_size: int, target_seq_len: int):
+        """
+        初始化一个滑动窗口的Dataset类别
+        :param seq_data:
+        :param input_size:
+        :param target_size:
+        :param target_seq_len:
+        """
+        self.seq_data = seq_data
+        self.input_size = input_size
+        self.target_size = target_size
+        self.target_seq_len = target_seq_len
+
+    def __len__(self):
+        return self.seq_data.shape[1] - self.target_seq_len
+
+    def __getitem__(self, item) -> (np.ndarray, np.ndarray):
+        """
+        返回一个索引开始为item的滑动窗口
+        :param item:
+        :return:
+        """
+        input_seq = self.seq_data[:, item: item + self.input_size]
+        target_seq = self.seq_data[:, item + self.input_size: item + self.target_size]
+        return input_seq, target_seq
 
 
 if __name__ == '__main__':

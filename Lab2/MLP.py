@@ -16,11 +16,6 @@ class SeqMLP(MyModule):
         """
         super(SeqMLP, self).__init__(config=config)
 
-        self.input_num = config.INPUT_N
-        self.output_num = config.OUTPUT_N
-        self.learn_rate = config.LEARN_RATE
-        self.momentum = config.MOMENTUM
-
         self.fc_layer1 = nn.Linear(in_features=self.input_num, out_features=200, bias=True)
         self.relu1 = nn.ReLU(inplace=True)
         self.fc_layer2 = nn.Linear(in_features=200, out_features=100, bias=True)
@@ -31,10 +26,6 @@ class SeqMLP(MyModule):
         # self.softmax = nn.Softmax(dim=1)
 
         self.loss_function = nn.MSELoss()
-
-        self.train_index = 0
-        self.validation_index = self.train_data.shape[1] - self.output_num
-        self.window_index = 0  # 用于标记滑动窗口的位置
 
         self.validation_inorder_loader = DataLoader(MyDataset(self.train_data), shuffle=False, batch_size=self.train_data.shape[0])
         self.train_shuffle_loader = DataLoader(MyDataset(get_windows_data(self.train_data[:, :self.validation_index], self.input_num+self.output_num)), shuffle=True, batch_size=self.batch_size)

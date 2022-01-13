@@ -28,5 +28,10 @@ class LSTMConfig:
         self.TRAIN_DATA_PATH = os.path.join(self.PROJECT_PATH, "Data/train.csv")
         self.TEST_DATA_PATH = os.path.join(self.PROJECT_PATH, "Data/test.csv")
 
+        # 对数据进行划分
+        self.TARGET_SEQ_LEN = 56    # 作为输出目标的序列长度
+        self.VALIDATION_SEQ_LEN = self.TARGET_SEQ_LEN   # 不训练的验证集的长度
+        self.INPUT_SIZE = 100
+
 
 
