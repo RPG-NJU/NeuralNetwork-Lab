@@ -96,6 +96,17 @@ def get_windows_data(x: np.ndarray, window_size: int) -> np.ndarray:
     return result.astype(np.float32)
 
 
+# class SeqWindowDatasetInputOnly(Dataset):
+#     def __init__(self, seq_data: np.ndarray, input_size: int):
+#         """
+#         初始化一个只加载输入数据的Dataset
+#         :param seq_data:
+#         :param input_size:
+#         """
+#         self.seq_data = seq_data
+#         self.input_size =
+
+
 class SeqWindowDataset(Dataset):
     def __init__(self, seq_data: np.ndarray, input_size: int, target_size: int, target_seq_len: int):
         """
@@ -111,7 +122,7 @@ class SeqWindowDataset(Dataset):
         self.target_seq_len = target_seq_len
 
     def __len__(self):
-        return self.seq_data.shape[1] - self.target_seq_len
+        return self.seq_data.shape[1] - self.target_seq_len - self.input_size
 
     def __getitem__(self, item) -> (np.ndarray, np.ndarray):
         """
@@ -120,8 +131,8 @@ class SeqWindowDataset(Dataset):
         :return:
         """
         input_seq = self.seq_data[:, item: item + self.input_size]
-        target_seq = self.seq_data[:, item + self.input_size: item + self.target_size]
-        return input_seq, target_seq
+        target_seq = self.seq_data[:, item + self.input_size: item + self.input_size + self.target_size]
+        return input_seq.astype(np.float32), target_seq.astype(np.float32)
 
 
 if __name__ == '__main__':
