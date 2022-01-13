@@ -72,7 +72,7 @@ class MLP(NNLayer):
                 if type(layer) == FullyConnectLayer:
                     weights_shape = layer.weights.shape
                     weights_num = np.size(layer.weights)
-                    layer.weights - np.random.normal(loc=0, scale=args[0] ** 0.5, size=weights_num).reshape(weights_shape)
+                    layer.weights = np.random.normal(loc=0, scale=args[0] ** 0.5, size=weights_num).reshape(weights_shape)
                     layer.bias = 0
         elif method == InitMethod.XAVIER:
             all_fc_layer = []

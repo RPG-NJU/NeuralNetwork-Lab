@@ -21,10 +21,12 @@ class SeqLSTM(nn.Module):
 
         # 需要加入一个线性层来得到一条数据
 
-        self.fc = nn.Linear(in_features=self.hidden_dim, out_features=self.target_size)
+        self.fc = nn.Linear(in_features=self.hidden_dim, out_features=self.target_size, bias=True)
 
     def forward(self, input, h, c):
         output, (h_next, c_next) = self.lstm(input, (h, c))
+        output = output[:, -1:, :]
+        # print(output.shape)
         output = self.fc(output)
         return output, h_next, c_next
 

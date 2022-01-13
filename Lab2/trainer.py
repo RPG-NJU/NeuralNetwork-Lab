@@ -83,7 +83,7 @@ class Trainer:
             target_data = target_data.permute(1, 2, 0)
             # [:, 0:10, :].
             # print(input_data.shape)
-            output_data, h, c = self.net.forward(input_data, h, c)
+            output_data, _, _ = self.net.forward(input_data, h, c)
             loss = self.loss_function(output_data[:, -self.target_size:, :], target_data)
             loss.backward()
             total_loss += loss.item()
@@ -95,26 +95,32 @@ class Trainer:
         进行一个Epoch的训练。
         :return:
         """
-        h_state, c_state = self.init_h_c_state()    # 每一次训练的时候，从头滑动，此时需要将H和C重新初始化
+        self.net.train()
+
+        # h_state, c_state = self.init_h_c_state()    # 每一次训练的时候，从头滑动，此时需要将H和C重新初始化
         train_loader = DataLoader(
             SeqWindowDataset(self.train_seq_norm, input_size=self.input_size, target_size=self.target_size,
                              target_seq_len=self.target_size), batch_size=1, shuffle=False)
         epoch_loss = 0.0
-        for data_pair in train_loader:
+        for index, data_pair in enumerate(train_loader):
+            h_state, c_state = self.init_h_c_state()
+            print("\rThis epoch training: %d/%d" % (index+1, len(train_loader)), end="")
             self.optimizer.zero_grad()
-            h_state = h_state.detach()
-            c_state = c_state.detach()
+            # h_state = h_state.detach()
+            # c_state = c_state.detach()
             input_data = data_pair[0].permute(1, 2, 0)
             target_data = data_pair[1].permute(1, 2, 0)
-            output_data, h_state, c_state = self.net.forward(input_data, h_state, c_state)
+            output_data, _, _ = self.net.forward(input_data, h_state, c_state)
             loss = self.loss_function(output_data[:, -self.target_size:, :], target_data)
             loss.backward()
             epoch_loss += loss.item()
             self.optimizer.step()
-
+        print(end="\n")
         return epoch_loss / len(train_loader)
 
     def test(self, mode: str):
+        self.net.eval()
+
         if mode == "validate":
             seq = self.validate_seq_data
             seq_norm = self.validate_seq_norm
@@ -130,8 +136,9 @@ class Trainer:
         seq_num = input_seq.shape[0]
 
         with torch.no_grad():
-            h_state, c_state = self.init_h_c_state()
+            # h_state, c_state = self.init_h_c_state()
             for i in range(0, self.target_seq_len):
+                h_state, c_state = self.init_h_c_state()
                 # if output_seq.shape[1] == 0
                 if output_seq.shape[1] >= self.input_size:
                     net_input_seq = output_seq[:, -50:].reshape((seq_num, seq_len, 1)).astype(np.float32)
@@ -139,7 +146,7 @@ class Trainer:
                     net_input_seq = np.concatenate((input_seq, output_seq), axis=1).reshape(
                         (seq_num, seq_len, 1)).astype(np.float32)
                 net_input_seq_tensor = torch.from_numpy(net_input_seq)
-                new_output_seq, h_state, c_state = self.net.forward(net_input_seq_tensor, h_state, c_state)
+                new_output_seq, _, _ = self.net.forward(net_input_seq_tensor, h_state, c_state)
                 new_output_seq = new_output_seq.numpy()[:, -1, 0].reshape((seq_num, 1))
 
                 # 进行滑动
@@ -152,7 +159,7 @@ class Trainer:
 
         with torch.no_grad():
             loss = self.loss_function(torch.from_numpy(output_seq.astype(np.float32)), torch.from_numpy(gt_seq.astype(np.float32)))
-            smape = utils.sMAPE(torch.from_numpy(OpData.line_denorm(output_seq, self.line_min, self.line_max)), torch.from_numpy(OpData.line_denorm(gt_seq, self.line_min, self.line_min)))
+            smape = utils.sMAPE(torch.from_numpy(OpData.line_denorm(output_seq, self.line_min, self.line_max)), torch.from_numpy(OpData.line_denorm(gt_seq, self.line_min, self.line_max)))
 
         return loss.item(), smape
 
@@ -163,5 +170,6 @@ if __name__ == '__main__':
     print(trainer.test("validate"))
     while True:
         print(trainer.train_epoch())
-        print(trainer.test("validate"))
+        print("Validation:", trainer.test("validate"))
+        print("Test", trainer.test("test"))
 
