@@ -122,7 +122,7 @@ class SeqWindowDataset(Dataset):
         self.target_seq_len = target_seq_len
 
     def __len__(self):
-        return self.seq_data.shape[1] - self.target_seq_len - self.input_size
+        return self.seq_data.shape[1] - self.target_seq_len - self.input_size + 1
 
     def __getitem__(self, item) -> (np.ndarray, np.ndarray):
         """

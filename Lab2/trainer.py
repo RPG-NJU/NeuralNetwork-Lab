@@ -18,6 +18,7 @@ class Trainer:
         self.input_size = config.INPUT_SIZE
         self.target_size = config.TARGET_SIZE
         self.target_seq_len = config.TARGET_SEQ_LEN
+        self.batch_size = config.BATCH_SIZE
 
         # 从Data中分别读取Train和Test数据
         self.train_data = OpData.read_csv(config.TRAIN_DATA_PATH)
@@ -50,45 +51,20 @@ class Trainer:
         if self.config.OPTIMIZER == "SGD":
             self.optimizer = optim.SGD(self.net.parameters(), self.config.LEARN_RATE, self.config.MOMENTUM, weight_decay=self.config.WEIGHT_DECAY)
         elif self.config.OPTIMIZER == "ADAM":
-            self.optimizer = optim.Adam(self.net.parameters(), lr=self.config.LEARN_RATE)
+            self.optimizer = optim.Adam(self.net.parameters(), lr=self.config.LEARN_RATE, weight_decay=self.config.WEIGHT_DECAY)
         else:
             print("No Such OPTIMIZER")
             exit(-1)
 
-    def init_h_c_state(self):
-        h_0 = torch.zeros(self.config.LAYER_NUM, self.train_seq_norm.shape[0], self.config.HIDDEN_DIM)
-        c_0 = torch.zeros(self.config.LAYER_NUM, self.train_seq_norm.shape[0], self.config.HIDDEN_DIM)
+        # 生成Train的所有序列
+        self.train_seq_windows = get_windows_data(self.train_seq_norm, self.input_size+self.target_size)
+
+    def init_h_c_state(self, batch_size):
+        h_0 = torch.zeros(self.config.LAYER_NUM, batch_size, self.config.HIDDEN_DIM)
+        c_0 = torch.zeros(self.config.LAYER_NUM, batch_size, self.config.HIDDEN_DIM)
         # h_0 = torch.zeros(self.config.LAYER_NUM, 10, self.config.HIDDEN_DIM)
         # c_0 = torch.zeros(self.config.LAYER_NUM, 10, self.config.HIDDEN_DIM)
         return h_0, c_0
-
-    def some_test(self):
-        """
-        在构建网络阶段用于测试的代码，最终不会再使用
-        :return:
-        """
-        print("Some TEST!")
-        loader = DataLoader(SeqWindowDataset(self.train_seq_norm, input_size=self.input_size, target_size=self.target_size, target_seq_len=self.target_size), batch_size=1, shuffle=False)
-        h, c = self.init_h_c_state()
-        total_loss = 0.0
-        for data in loader:
-            self.optimizer.zero_grad()
-            h = h.detach()
-            c = c.detach()
-            input_data = data[0]
-            target_data = data[1]
-            # print(input_data.shape)
-            # print(data[0].permute(1, 2, 0).shape, data[1].permute(1, 2, 0).shape)
-            input_data = input_data.permute(1, 2, 0)
-            target_data = target_data.permute(1, 2, 0)
-            # [:, 0:10, :].
-            # print(input_data.shape)
-            output_data, _, _ = self.net.forward(input_data, h, c)
-            loss = self.loss_function(output_data[:, -self.target_size:, :], target_data)
-            loss.backward()
-            total_loss += loss.item()
-            self.optimizer.step()
-        print(total_loss / len(loader))
 
     def train_epoch(self):
         """
@@ -98,20 +74,27 @@ class Trainer:
         self.net.train()
 
         # h_state, c_state = self.init_h_c_state()    # 每一次训练的时候，从头滑动，此时需要将H和C重新初始化
+        # train_loader = DataLoader(
+        #     SeqWindowDataset(self.train_seq_norm, input_size=self.input_size, target_size=self.target_size,
+        #                      target_seq_len=self.target_size), batch_size=1, shuffle=False)
         train_loader = DataLoader(
-            SeqWindowDataset(self.train_seq_norm, input_size=self.input_size, target_size=self.target_size,
-                             target_seq_len=self.target_size), batch_size=1, shuffle=False)
+            MyDataset(self.train_seq_windows),
+            batch_size=self.batch_size,
+            shuffle=True
+        )
         epoch_loss = 0.0
         for index, data_pair in enumerate(train_loader):
-            h_state, c_state = self.init_h_c_state()
             print("\rThis epoch training: %d/%d" % (index+1, len(train_loader)), end="")
             self.optimizer.zero_grad()
-            # h_state = h_state.detach()
-            # c_state = c_state.detach()
-            input_data = data_pair[0].permute(1, 2, 0)
-            target_data = data_pair[1].permute(1, 2, 0)
+            input_data = data_pair[:, :self.input_size]
+            target_data = data_pair[:, self.input_size:]
+            h_state, c_state = self.init_h_c_state(batch_size=input_data.shape[0])
+            input_data = input_data.reshape((input_data.shape[0], input_data.shape[1], 1))
+            target_data = target_data.reshape((target_data.shape[0], target_data.shape[1], 1))
+
             output_data, _, _ = self.net.forward(input_data, h_state, c_state)
-            loss = self.loss_function(output_data[:, -self.target_size:, :], target_data)
+            # print(output_data.shape, target_data.shape)
+            loss = self.loss_function(output_data.permute(0, 2, 1), target_data)
             loss.backward()
             epoch_loss += loss.item()
             self.optimizer.step()
@@ -129,47 +112,50 @@ class Trainer:
             seq_norm = self.test_seq_norm
         # seq是没有归一化的数据，seq_norm是归一化之后的数据
 
-        input_seq = seq_norm[:, :-self.target_seq_len]  # 作为输入的部分, (111, input_size)
-        gt_seq = seq_norm[:, -self.target_seq_len:]
-        output_seq = np.zeros((input_seq.shape[0], 0))
-        seq_len = input_seq.shape[1]
-        seq_num = input_seq.shape[0]
+        # input_seq = seq_norm[:, :-self.target_seq_len]  # 作为输入的部分, (111, input_size)
+        # gt_seq = seq_norm[:, -self.target_seq_len:]
+        # output_seq = np.zeros((input_seq.shape[0], 0))
+        # seq_len = input_seq.shape[1]
+        # seq_num = input_seq.shape[0]
 
         with torch.no_grad():
-            # h_state, c_state = self.init_h_c_state()
-            for i in range(0, self.target_seq_len):
-                h_state, c_state = self.init_h_c_state()
-                # if output_seq.shape[1] == 0
-                if output_seq.shape[1] >= self.input_size:
-                    net_input_seq = output_seq[:, -50:].reshape((seq_num, seq_len, 1)).astype(np.float32)
-                else:
-                    net_input_seq = np.concatenate((input_seq, output_seq), axis=1).reshape(
-                        (seq_num, seq_len, 1)).astype(np.float32)
-                net_input_seq_tensor = torch.from_numpy(net_input_seq)
-                new_output_seq, _, _ = self.net.forward(net_input_seq_tensor, h_state, c_state)
-                new_output_seq = new_output_seq.numpy()[:, -1, 0].reshape((seq_num, 1))
+            data_loader = DataLoader(SeqWindowDataset(seq_norm, input_size=self.input_size, target_size=self.target_size, target_seq_len=self.target_seq_len), batch_size=1, shuffle=False)
+            data_iter = iter(data_loader)
+            input_data, target_data = next(data_iter)
+            input_data = input_data.permute(1, 2, 0)
+            target_data = target_data.permute(1, 2, 0)
 
-                # 进行滑动
-                if input_seq.shape[1] > 0:
-                    input_seq = input_seq[:, 1:]
-                output_seq = np.concatenate((output_seq, new_output_seq), axis=1)
-                # print(input_seq.shape, output_seq.shape)
+            h_state, c_state = self.init_h_c_state(111)
+            target_shape = (seq_norm.shape[0], self.target_seq_len) # 最终输出的Shape
 
-        assert output_seq.shape == gt_seq.shape
+            output_data, _, _ = self.net.forward(input_data, h_state, c_state)
+            loss = self.loss_function(output_data.permute(0, 2, 1), target_data)
+            loss = loss.item()
 
-        with torch.no_grad():
-            loss = self.loss_function(torch.from_numpy(output_seq.astype(np.float32)), torch.from_numpy(gt_seq.astype(np.float32)))
-            smape = utils.sMAPE(torch.from_numpy(OpData.line_denorm(output_seq, self.line_min, self.line_max)), torch.from_numpy(OpData.line_denorm(gt_seq, self.line_min, self.line_max)))
+            output_data = output_data.numpy()
+            target_data = target_data.numpy()
+            output_data = output_data.reshape(target_shape)
+            target_data = target_data.reshape(target_shape)
 
-        return loss.item(), smape
+            output_data = OpData.line_denorm(output_data, self.line_min, self.line_max)
+            target_data = OpData.line_denorm(target_data, self.line_min, self.line_max)
+
+            smape = utils.sMAPE(torch.from_numpy(output_data), torch.from_numpy(target_data))
+
+            return loss, smape
 
 
 if __name__ == '__main__':
-    trainer = Trainer()
+    config = LSTMConfig()
+    trainer = Trainer(config)
     # print(trainer.train_seq_data.shape, trainer.validate_seq_data.shape, trainer.test_seq_data.shape)
-    print(trainer.test("validate"))
-    while True:
-        print(trainer.train_epoch())
-        print("Validation:", trainer.test("validate"))
-        print("Test", trainer.test("test"))
+    # print(trainer.test("validate"))
+    for epoch in range(0, config.EPOCH):
+        train_loss = trainer.train_epoch()
+        validate_loss, validate_smape = trainer.test("validate")
+        test_loss, test_smape = trainer.test("test")
+        print("===>  Epoch %d" % epoch+1)
+        print("Train Loss=%.6f" % train_loss)
+        print("Validate Loss=%.6f, sMAPE=%.3f" % (validate_loss, validate_smape))
+        print("Test Loss=%.6f, sMAPE=%.3f" % (test_loss, test_smape))
 

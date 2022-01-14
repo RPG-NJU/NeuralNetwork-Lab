@@ -14,6 +14,7 @@ class Config:
         self.TRAIN_LABELS_PATH = os.path.join(self.PROJECT_PATH, "Data/train-labels-idx1-ubyte")
         self.TEST_IMAGES_PATH = os.path.join(self.PROJECT_PATH, "Data/t10k-images-idx3-ubyte")
         self.TEST_LABELS_PATH = os.path.join(self.PROJECT_PATH, "Data/t10k-labels-idx1-ubyte")
+        self.TB_LOG_PATH = os.path.join(self.PROJECT_PATH, "tb")
 
         self.INIT_LEARN_RATE = 0.001
         self.BATCH_SIZE = 20

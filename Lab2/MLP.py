@@ -30,7 +30,6 @@ class SeqMLP(MyModule):
         self.validation_inorder_loader = DataLoader(MyDataset(self.train_data), shuffle=False, batch_size=self.train_data.shape[0])
         self.train_shuffle_loader = DataLoader(MyDataset(get_windows_data(self.train_data[:, :self.validation_index], self.input_num+self.output_num)), shuffle=True, batch_size=self.batch_size)
         self.test_inorder_loader = DataLoader(MyDataset(self.test_data), shuffle=False, batch_size=self.train_data.shape[0])
-
         self.optimizer = optim.SGD(self.parameters(), lr=self.learn_rate, momentum=self.momentum)
 
     def forward(self, x):
