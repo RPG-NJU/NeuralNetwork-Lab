@@ -31,26 +31,28 @@ class LSTMConfig:
         # 对数据进行设置
         self.TARGET_SEQ_LEN = 56    # 作为输出目标的序列长度
         self.VALIDATION_SEQ_LEN = self.TARGET_SEQ_LEN   # 不训练的验证集的长度
-        self.INPUT_SIZE = 100
+        self.INPUT_SIZE = 200
         self.TARGET_SIZE = 1    # 每次输出的长度
         self.BATCH_SIZE = 111   # 对于LSTM来说每一个BATCH的大小
 
         # 对网络进行设置
-        self.LAYER_NUM = 6
-        self.HIDDEN_DIM = 12
+        self.LAYER_NUM = 1
+        self.HIDDEN_DIM = 200
         self.DROPOUT = 0.0
 
         # 优化器设置
         # 使用SGD
         self.OPTIMIZER = "SGD"
-        self.LEARN_RATE = 0.002
+        self.LEARN_RATE = 0.05
         self.MOMENTUM = 0.9
+        self.WEIGHT_DECAY = 0.0
         # 使用Adam
         # self.OPTIMIZER = "ADAM"
         # self.LEARN_RATE = 0.01
 
         # 损失函数设置
         self.LOSS_FUNCTION = "MSE"
+        # self.LOSS_FUNCTION = "L1"
 
 
 

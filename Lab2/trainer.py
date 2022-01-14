@@ -48,7 +48,7 @@ class Trainer:
 
         # 优化器部分
         if self.config.OPTIMIZER == "SGD":
-            self.optimizer = optim.SGD(self.net.parameters(), self.config.LEARN_RATE, self.config.MOMENTUM)
+            self.optimizer = optim.SGD(self.net.parameters(), self.config.LEARN_RATE, self.config.MOMENTUM, weight_decay=self.config.WEIGHT_DECAY)
         elif self.config.OPTIMIZER == "ADAM":
             self.optimizer = optim.Adam(self.net.parameters(), lr=self.config.LEARN_RATE)
         else:
@@ -122,10 +122,10 @@ class Trainer:
         self.net.eval()
 
         if mode == "validate":
-            seq = self.validate_seq_data
+            # seq = self.validate_seq_data
             seq_norm = self.validate_seq_norm
         else:
-            seq = self.test_seq_data
+            # seq = self.test_seq_data
             seq_norm = self.test_seq_norm
         # seq是没有归一化的数据，seq_norm是归一化之后的数据
 

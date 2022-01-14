@@ -111,7 +111,6 @@ class MLP(NNLayer):
 
         total_loss = 0.0
         total_acc = 0.0
-
         for i in range(0, batch_num):
             x = self.train_images[i*self.batch_size: (i+1)*self.batch_size].T
             y_gt = self.train_labels[i*self.batch_size: (i+1)*self.batch_size]
