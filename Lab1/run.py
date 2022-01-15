@@ -9,8 +9,8 @@ from layers import *
 
 def run_baseline():
     config = Config()
-    config.WEIGHT_DECAY = 0.001
-    config.REG_MODE = "L1"
+    # config.WEIGHT_DECAY = 0.001
+    # config.REG_MODE = "L1"
     mlp = BaselineMLP(config)
     # mlp.layer_list.append(Sigmoid())
     # mlp.loss_function = MSELoss()
@@ -112,6 +112,27 @@ def get_l2_regular_mlp():
     config.WEIGHT_DECAY = 0.001
     config.REG_MODE = "L2"
     return BaselineMLP(config=config)
+
+
+def run_best_mlp():
+    """
+    调参之后效果最好的网络
+    :return:
+    """
+    config = Config()
+    config.WEIGHT_DECAY = 0.0005
+    config.REG_MODE = "L2"
+    config.EPOCH = 60
+    mlp = BaselineMLP(config)
+    mlp.init(InitMethod.HE)
+    for epoch in range(0, config.EPOCH):
+        if epoch == 40 or epoch == 50:
+            mlp.set_learn_rate(mlp.learn_rate * 0.5)
+        print("===>  Epoch: %d" % (epoch + 1))
+        loss, train_acc = mlp.train()
+        print("Train Set:, Loss=%f, Acc=%f" % (loss, train_acc))
+        test_acc = mlp.test()
+        print("Test Set: Acc=%f" % test_acc)
 
 
 def compare_all_method():
@@ -220,3 +241,4 @@ if __name__ == '__main__':
     # print("===>  RUN")
     # run_baseline()
     compare_all_method()
+    run_best_mlp()

@@ -51,7 +51,6 @@ class FullyConnectLayer(NNLayer):
         :return: output Y, shape=(out_channel,batch_size)
         """
         self.x = x  # 记录当前输入的X
-        # print(self.weights.shape, self.x.shape, self.bias.shape)
         return self.weights @ self.x + self.bias
 
     def backward(self, loss: np.ndarray):
@@ -60,11 +59,6 @@ class FullyConnectLayer(NNLayer):
         :param loss: 上层传递的Loss值, shape=(out_channel, 1)
         :return: 继续传递的Loss值
         """
-        # x_mean = np.mean(self.x, axis=1)    # shape=(in_channels,)
-        # assert x_mean.shape == (self.in_channels, )
-
-        # print(loss.shape, self.x.shape[1])
-
         delta_w = self.learn_rate * (loss @ self.x.T) / self.x.shape[1]
         delta_b = np.mean(self.learn_rate * loss, axis=1).reshape(self.out_channels, 1)
 
@@ -100,15 +94,12 @@ class ReLU(NNLayer):
         self.weights = None
 
     def forward(self, x):
-        # self.weights = np.zeros((self.channels, x.shape[1]))
         self.weights = np.where(x > 0, 1, 0)
         assert self.weights.shape == x.shape
 
         return x * self.weights
 
     def backward(self, loss: np.ndarray):
-        # print(loss.shape, self.weights.T.shape)
-        # w_mean = np.mean(self.weights, axis=1).reshape((loss.shape[0], 1))
         return loss * self.weights
 
 
@@ -188,7 +179,6 @@ class MSELoss(NNLayer):
         :param y: Labels，shape=(batch_size,)
         :return:
         """
-        # assert y.shape[1] == 1
         y_one_hot = np.zeros(x.shape)
         for i in range(0, y.shape[0]):
             y_one_hot[y[i], i] = 1.0

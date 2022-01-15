@@ -18,7 +18,7 @@ class Config:
 
         self.INIT_LEARN_RATE = 0.02
         self.BATCH_SIZE = 20
-        self.EPOCH = 40
+        self.EPOCH = 30
 
         self.REG_MODE = "None"
         self.WEIGHT_DECAY = 0.0

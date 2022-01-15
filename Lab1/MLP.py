@@ -46,7 +46,6 @@ class MLP(NNLayer):
         next_step_loss = loss
         for i in range(1, len(self.layer_list) + 1):
             next_step_loss = self.layer_list[-i].backward(next_step_loss)
-            # print(next_step_loss.shape)
         return next_step_loss
 
     def init(self, method: InitMethod, args=[]):
@@ -90,7 +89,6 @@ class MLP(NNLayer):
 
                 r = 4 * ((6 / (m_last + m)) ** 0.5)
                 all_fc_layer[i].weights = np.random.uniform(-r, r, m).reshape(weights_shape)
-                all_fc_layer[i].bias = 0
         elif method == InitMethod.HE:
             for layer in self.layer_list:
                 if type(layer) == FullyConnectLayer:
