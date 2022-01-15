@@ -18,7 +18,7 @@ class NNLayer:
 
 class FullyConnectLayer(NNLayer):
 
-    def __init__(self, in_channels, out_channels, learn_rate=0.0001):
+    def __init__(self, in_channels, out_channels, learn_rate=0.0001, weight_decay=0.0, reg_mode="None"):
         """
         初始化这一层全连接层
         :param in_channels: 输入的隐层or数据维度
@@ -30,6 +30,9 @@ class FullyConnectLayer(NNLayer):
         self.out_channels = out_channels
         self.learn_rate = learn_rate
 
+        self.weight_decay = weight_decay
+        self.reg_mode = reg_mode
+
         # 网络层的权重，shape=out*in，最终在运算阶段，采用W*X的形式
         self.weights = np.zeros((out_channels, in_channels))
         # Bias
@@ -37,6 +40,9 @@ class FullyConnectLayer(NNLayer):
 
         self.x = None
         return
+
+    def set_learn_rate(self, learn_rate):
+        self.learn_rate = learn_rate
 
     def forward(self, x: np.ndarray):
         """
@@ -58,15 +64,29 @@ class FullyConnectLayer(NNLayer):
         # assert x_mean.shape == (self.in_channels, )
 
         # print(loss.shape, self.x.shape[1])
-        delta_w = - self.learn_rate * (loss @ self.x.T) / self.x.shape[1]
-        # print(delta_w.shape)
-        delta_b = - np.mean(self.learn_rate * loss, axis=1).reshape(self.out_channels, 1)
+
+        delta_w = self.learn_rate * (loss @ self.x.T) / self.x.shape[1]
+        delta_b = np.mean(self.learn_rate * loss, axis=1).reshape(self.out_channels, 1)
+
+        if self.reg_mode != "None":
+            # 如下进行正则化的传递
+            if self.reg_mode == "L1":
+                more_than_zero = np.where(self.weights > 0, 1, 0)
+                less_than_zero = np.where(self.weights < 0, -1, 0)
+                reg_matrix = self.weight_decay * (more_than_zero + less_than_zero)
+                reg_matrix = reg_matrix * self.weights
+            elif self.reg_mode == "L2":
+                reg_matrix = self.weight_decay * self.weights
+            else:
+                exit(-1)
+            delta_w += self.learn_rate * reg_matrix
+
         assert delta_w.shape == (self.out_channels, self.in_channels)
         assert delta_b.shape == (self.out_channels, 1)
 
         next_step_loss = self.weights.T @ loss
-        self.weights += delta_w
-        self.bias += delta_b
+        self.weights -= delta_w
+        self.bias -= delta_b
 
         # print(next_step_loss.shape)
         return next_step_loss
@@ -95,13 +115,15 @@ class ReLU(NNLayer):
 class Sigmoid(NNLayer):
     def __init__(self):
         super(Sigmoid, self).__init__()
+        self.x = None
 
     def forward(self, x):
+        self.x = x
         return 1 / (1 + np.exp(-x))
 
     def backward(self, loss):
-        sigmoid = 1 / (1 + np.exp(-loss))
-        return sigmoid * (1 - sigmoid)
+        sigmoid = 1 / (1 + np.exp(-self.x))
+        return sigmoid * (1 - sigmoid) * loss
 
 
 class Softmax(NNLayer):

@@ -16,9 +16,12 @@ class Config:
         self.TEST_LABELS_PATH = os.path.join(self.PROJECT_PATH, "Data/t10k-labels-idx1-ubyte")
         self.TB_LOG_PATH = os.path.join(self.PROJECT_PATH, "tb")
 
-        self.INIT_LEARN_RATE = 0.001
+        self.INIT_LEARN_RATE = 0.02
         self.BATCH_SIZE = 20
-        self.EPOCH = 100
+        self.EPOCH = 40
+
+        self.REG_MODE = "None"
+        self.WEIGHT_DECAY = 0.0
 
 
 if __name__ == '__main__':

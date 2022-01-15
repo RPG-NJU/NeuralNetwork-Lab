@@ -31,6 +31,9 @@ class MLP(NNLayer):
         self.test_images = OpData.read_idx3_file(config.TEST_IMAGES_PATH)
         self.test_labels = OpData.read_idx1_file(config.TEST_LABELS_PATH).astype(int)
 
+        self.train_images = self.train_images / 255
+        self.test_images = self.test_images / 255
+
         return
 
     def forward(self, x):
@@ -46,7 +49,7 @@ class MLP(NNLayer):
             # print(next_step_loss.shape)
         return next_step_loss
 
-    def init(self, method: InitMethod, args: list):
+    def init(self, method: InitMethod, args=[]):
         """
         初始化网络
         :param method: 初始化的方法
@@ -56,8 +59,7 @@ class MLP(NNLayer):
         if method == InitMethod.ZERO:
             for layer in self.layer_list:
                 if type(layer) == FullyConnectLayer:
-                    layer.weights = 0
-                    layer.bias = 0
+                    layer.weights = np.zeros(layer.weights.shape)
         elif method == InitMethod.UNIFORM:
             assert len(args) == 2
             for layer in self.layer_list:
@@ -65,7 +67,6 @@ class MLP(NNLayer):
                     weights_shape = layer.weights.shape
                     weights_num = np.size(layer.weights)
                     layer.weights = np.random.uniform(args[0], args[1], weights_num).reshape(weights_shape)
-                    layer.bias = 0
         elif method == InitMethod.GAUSS:
             assert len(args) == 1
             for layer in self.layer_list:
@@ -73,7 +74,6 @@ class MLP(NNLayer):
                     weights_shape = layer.weights.shape
                     weights_num = np.size(layer.weights)
                     layer.weights = np.random.normal(loc=0, scale=args[0] ** 0.5, size=weights_num).reshape(weights_shape)
-                    layer.bias = 0
         elif method == InitMethod.XAVIER:
             all_fc_layer = []
             for layer in self.layer_list:
@@ -88,7 +88,7 @@ class MLP(NNLayer):
                 m = np.size(all_fc_layer[i].weights)
                 weights_shape = all_fc_layer[i].weights.shape
 
-                r = 4 * ((6 / m_last + m) ** 0.5)
+                r = 4 * ((6 / (m_last + m)) ** 0.5)
                 all_fc_layer[i].weights = np.random.uniform(-r, r, m).reshape(weights_shape)
                 all_fc_layer[i].bias = 0
         elif method == InitMethod.HE:
@@ -98,7 +98,6 @@ class MLP(NNLayer):
                     weights_num = np.size(layer.weights)
                     r = (6 / weights_num) ** 0.5
                     layer.weights = np.random.uniform(-r, r, weights_num).reshape(weights_shape)
-                    layer.bias = 0
         else:
             print("Error: No Such Init Method!")
             exit(-1)
@@ -143,13 +142,19 @@ class MLP(NNLayer):
 
         return total_acc
 
+    def set_learn_rate(self, learn_rate):
+        for layer in self.layer_list:
+            if type(layer) == FullyConnectLayer:
+                layer.set_learn_rate(learn_rate)
+        return
+
 
 class BaselineMLP(MLP):
     def __init__(self, config=Config()):
         super(BaselineMLP, self).__init__(config=config)
-        self.fc1 = FullyConnectLayer(784, 100, self.learn_rate)
-        self.fc2 = FullyConnectLayer(100, 50, self.learn_rate)
-        self.fc3 = FullyConnectLayer(50, 10, self.learn_rate)
+        self.fc1 = FullyConnectLayer(784, 100, self.learn_rate, weight_decay=config.WEIGHT_DECAY, reg_mode=config.REG_MODE)
+        self.fc2 = FullyConnectLayer(100, 50, self.learn_rate, weight_decay=config.WEIGHT_DECAY, reg_mode=config.REG_MODE)
+        self.fc3 = FullyConnectLayer(50, 10, self.learn_rate, weight_decay=config.WEIGHT_DECAY, reg_mode=config.REG_MODE)
         self.layer_list = [
             self.fc1,
             ReLU(),
@@ -159,8 +164,9 @@ class BaselineMLP(MLP):
         ]
 
         self.loss_function = SoftmaxCELoss()
+        # self.loss_function = MSELoss()
 
-        self.init(method=InitMethod.UNIFORM, args=[-0.1, 0.1])
+        self.init(method=InitMethod.UNIFORM, args=[-0.01, 0.01])
 
 
 if __name__ == '__main__':
