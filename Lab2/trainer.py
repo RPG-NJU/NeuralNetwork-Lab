@@ -9,6 +9,7 @@ from torch.utils.data import DataLoader
 import torch.optim as optim
 import torch.nn as nn
 import utils
+import tensorboardX as tb
 
 
 class Trainer:
@@ -43,6 +44,8 @@ class Trainer:
         # 损失函数部分
         if self.config.LOSS_FUNCTION == "MSE":
             self.loss_function = nn.MSELoss()
+        elif self.config.LOSS_FUNCTION == "L1":
+            self.loss_function = nn.L1Loss()
         else:
             print("No Such OPTIMIZER")
             exit(-1)
@@ -148,14 +151,25 @@ class Trainer:
 if __name__ == '__main__':
     config = LSTMConfig()
     trainer = Trainer(config)
-    # print(trainer.train_seq_data.shape, trainer.validate_seq_data.shape, trainer.test_seq_data.shape)
-    # print(trainer.test("validate"))
+    tb_writer = tb.SummaryWriter(config.TB_PATH)
     for epoch in range(0, config.EPOCH):
         train_loss = trainer.train_epoch()
         validate_loss, validate_smape = trainer.test("validate")
         test_loss, test_smape = trainer.test("test")
-        print("===>  Epoch %d" % epoch+1)
-        print("Train Loss=%.6f" % train_loss)
-        print("Validate Loss=%.6f, sMAPE=%.3f" % (validate_loss, validate_smape))
-        print("Test Loss=%.6f, sMAPE=%.3f" % (test_loss, test_smape))
+        print("===>  Epoch: %d" % (epoch+1))
+        print("Train Loss=%.6f, Validate Loss=%.6f, Validate sMAPE=%.3f, Test sMAPE=%.3f" % (train_loss, validate_loss, validate_smape, test_smape))
+
+        # 绘制图像
+        tb_writer.add_scalars("Loss",
+                              {
+                                  "LSTM-Best-Train": train_loss,
+                                  "LSTM-Best-Val": validate_loss
+                              }, epoch+1)
+
+        tb_writer.add_scalars("sMAPE",
+                              {
+                                  "LSTM-Best-Val": validate_smape,
+                                  "LSTM-Best-Test": test_smape
+                              }, epoch + 1)
+
 

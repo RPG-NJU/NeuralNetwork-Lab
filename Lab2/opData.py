@@ -85,8 +85,8 @@ def line_minmax_denorm(x: np.ndarray, y: np.ndarray, min: np.ndarray, max: np.nd
 def get_windows_data(x: np.ndarray, window_size: int) -> np.ndarray:
     """
     将输入的数据，按照滑动窗口的方式得到滑动之后拼接的数据集
-    :param x:
-    :param window_size:
+    :param x: 原始数据，shape=(111, L)
+    :param window_size: 滑动窗口的大小
     :return: 所有滑动窗口拼接而成的数据集
     """
     # print(x.shape)

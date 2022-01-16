@@ -1,4 +1,3 @@
-import torch
 import torch.nn as nn
 from config import MLPConfig
 from opData import *
@@ -6,6 +5,7 @@ from torch.utils.data import Dataset, DataLoader
 from myModule import MyModule
 import torch.optim as optim
 from utils import sMAPE
+import tensorboardX as tb
 
 
 class SeqMLP(MyModule):
@@ -16,6 +16,7 @@ class SeqMLP(MyModule):
         """
         super(SeqMLP, self).__init__(config=config)
 
+        # 设置网络全连接层和ReLU激活层
         self.fc_layer1 = nn.Linear(in_features=self.input_num, out_features=200, bias=True)
         self.relu1 = nn.ReLU(inplace=True)
         self.fc_layer2 = nn.Linear(in_features=200, out_features=100, bias=True)
@@ -23,13 +24,17 @@ class SeqMLP(MyModule):
         self.fc_layer3 = nn.Linear(in_features=100, out_features=80, bias=True)
         self.relu3 = nn.ReLU(inplace=True)
         self.fc_layer4 = nn.Linear(in_features=80, out_features=self.output_num, bias=True)
-        # self.softmax = nn.Softmax(dim=1)
 
+        # 设置损失函数
         self.loss_function = nn.MSELoss()
+        # self.loss_function = nn.L1Loss()
 
+        # 获得训练集/验证集/测试集
         self.validation_inorder_loader = DataLoader(MyDataset(self.train_data), shuffle=False, batch_size=self.train_data.shape[0])
         self.train_shuffle_loader = DataLoader(MyDataset(get_windows_data(self.train_data[:, :self.validation_index], self.input_num+self.output_num)), shuffle=True, batch_size=self.batch_size)
         self.test_inorder_loader = DataLoader(MyDataset(self.test_data), shuffle=False, batch_size=self.train_data.shape[0])
+
+        # 设置优化器
         self.optimizer = optim.SGD(self.parameters(), lr=self.learn_rate, momentum=self.momentum)
 
     def forward(self, x):
@@ -41,10 +46,13 @@ class SeqMLP(MyModule):
         result = self.fc_layer3(result)
         result = self.relu3(result)
         result = self.fc_layer4(result)
-        # result = self.softmax(result)
         return result
 
     def train_a_epoch(self):
+        """
+        进行一轮的训练。
+        :return:
+        """
         total_loss = 0.0
         total_n = 0.0
 
@@ -65,9 +73,13 @@ class SeqMLP(MyModule):
             total_n += batch_train_data.shape[0]
 
         total_loss = total_loss / total_n
-        print(total_loss)
+        return total_loss
 
     def validate(self):
+        """
+        进行验证
+        :return:
+        """
         with torch.no_grad():
             for val_data in self.validation_inorder_loader:
                 val_input = val_data[:, self.validation_index-self.input_num: self.validation_index]
@@ -80,6 +92,10 @@ class SeqMLP(MyModule):
                 return smape
 
     def test(self):
+        """
+        进行测试
+        :return:
+        """
         with torch.no_grad():
             train_inorder_iter = iter(self.validation_inorder_loader)
             test_inorder_iter = iter(self.test_inorder_loader)
@@ -92,12 +108,22 @@ class SeqMLP(MyModule):
 
             return sMAPE(output_data, target_data)
 
-            # print(input_data.shape, target_data.shape)
-
 
 if __name__ == '__main__':
     mlp = SeqMLP(config=MLPConfig())
+    tb_writer = tb.SummaryWriter(logdir=MLPConfig().TB_PATH)
     for epoch in range(0, MLPConfig().EPOCH):
-        mlp.train_a_epoch()
-        print(mlp.validate())
-        print("Test sMAPE=%.3f " % mlp.test())
+        print("===>  Epoch: %d" % (epoch+1))
+        train_loss = mlp.train_a_epoch()
+        val_smape = mlp.validate()
+        test_smape = mlp.test()
+        print("Train Loss=%.6f, Validate sMAPE=%.3f, Test sMAPE=%.3f" % (train_loss, val_smape, test_smape))
+
+        tb_writer.add_scalars(main_tag="Loss", tag_scalar_dict={
+            "MLP-Train": train_loss
+        }, global_step=epoch+1)
+        tb_writer.add_scalars(main_tag="sMAPE", tag_scalar_dict={
+            "MLP-Validate": val_smape,
+            "MLP-Test": test_smape
+        }, global_step=epoch+1)
+

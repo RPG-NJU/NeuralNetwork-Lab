@@ -11,6 +11,7 @@ class MLPConfig:
         self.PROJECT_PATH = os.getcwd()
         self.TRAIN_DATA_PATH = os.path.join(self.PROJECT_PATH, "Data/train.csv")
         self.TEST_DATA_PATH = os.path.join(self.PROJECT_PATH, "Data/test.csv")
+        self.TB_PATH = os.path.join(self.PROJECT_PATH, "tb")
 
         # 超参数
         self.INPUT_N = 100
@@ -19,7 +20,7 @@ class MLPConfig:
 
         self.LEARN_RATE = 0.01
         self.MOMENTUM = 0.9
-        self.EPOCH = 100
+        self.EPOCH = 50
 
 
 class LSTMConfig:
@@ -27,11 +28,12 @@ class LSTMConfig:
         self.PROJECT_PATH = os.getcwd()
         self.TRAIN_DATA_PATH = os.path.join(self.PROJECT_PATH, "Data/train.csv")
         self.TEST_DATA_PATH = os.path.join(self.PROJECT_PATH, "Data/test.csv")
+        self.TB_PATH = os.path.join(self.PROJECT_PATH, "tb")
 
         # 对数据进行设置
         self.TARGET_SEQ_LEN = 56    # 作为输出目标的序列长度
         self.VALIDATION_SEQ_LEN = self.TARGET_SEQ_LEN   # 不训练的验证集的长度
-        self.INPUT_SIZE = 100
+        self.INPUT_SIZE = 200
         self.TARGET_SIZE = 56    # 每次输出的长度
         self.BATCH_SIZE = 40   # 对于LSTM来说每一个BATCH的大小
 
@@ -43,20 +45,20 @@ class LSTMConfig:
         # 优化器设置
         # 使用SGD
         # self.OPTIMIZER = "SGD"
-        # self.LEARN_RATE = 0.05
+        # self.LEARN_RATE = 0.002
         # self.MOMENTUM = 0.9
         # self.WEIGHT_DECAY = 0.0
         # 使用Adam
         self.OPTIMIZER = "ADAM"
-        self.LEARN_RATE = 0.006
-        self.WEIGHT_DECAY = 0.00
+        self.LEARN_RATE = 0.002
+        self.WEIGHT_DECAY = 0.0
 
         # 损失函数设置
-        self.LOSS_FUNCTION = "MSE"
-        # self.LOSS_FUNCTION = "L1"
+        # self.LOSS_FUNCTION = "MSE"
+        self.LOSS_FUNCTION = "L1"
 
         # 训练设置
-        self.EPOCH = 40
+        self.EPOCH = 10
 
 
 
